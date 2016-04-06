@@ -1,0 +1,93 @@
+#cloud-config
+runcmd:
+  #- sleep 10
+  - systemctl daemon-reload
+  - systemctl enable docker
+  - systemctl enable etcd.service; systemctl start etcd.service
+  - systemctl enable kube-apiserver; systemctl start kube-apiserver
+  - systemctl enable kube-controller-manager; systemctl start kube-controller-manager
+  - systemctl enable kube-scheduler; systemctl start kube-scheduler
+  - systemctl enable flanneld
+  
+write_files:
+  - path: /etc/hosts
+    owner: root:root
+    permissions: '0644'
+    content: |
+        10.0.0.200 openstack.ayinla.com
+        10.0.0.109 fedora.ayinla.com
+        127.0.0.1 localhost kube-master
+        
+  - path: /etc/resolv.conf
+    owner: root:root
+    permissions: '0644'
+    content: |
+        search ayinla.com
+        domain ayinla.com
+        nameserver 8.8.4.4
+        nameserver 8.8.8.8
+  - path: /etc/systemd/system/kube-apiserver.service.d/drop-in.conf
+    permissions: '0644'
+    owner: root:root
+    content: |
+      [Service]
+      Environment=KUBE_API_ADDRESS="--address=0.0.0.0"
+      Environment=KUBE_API_PORT="--port=8080"
+      Environment=KUBELET_PORT="--kubelet_port=10250"
+      Environment=KUBE_ETCD_SERVERS="--etcd_servers=http://127.0.0.1:2379"
+      Environment=KUBE_SERVICE_ADDRESSES="--service-cluster-ip-range=10.254.0.0/16"
+      Environment=KUBE_ADMISSION_CONTROL="--admission_control=NamespaceLifecycle,NamespaceExists,LimitRanger,SecurityContextDeny,ResourceQuota"
+      Environment=KUBE_API_ARGS=""
+  
+  - path: /etc/systemd/system/flanneld.service.d/drop-in.conf
+    permissions: '0644'
+    content: |
+      [Service]
+      Environment="FLANNEL_ETCD=http://kube-master:4001"
+      Environment="FLANNEL_ETCD_KEY=/flannel/network"
+      #FLANNEL_OPTIONS=""
+      
+  - path: /etc/systemd/system/controller-manager.service.d/drop-in.conf
+    permissions: '0644'
+    content: |
+      [Service]
+      Environment=KUBELET_ADDRESSES="--machines=kube-minion1, kube-minion2"
+      Environment=KUBE_CONTROLLER_MANAGER_ARGS=""
+      
+  - path: /etc/systemd/system/etcd.service.d/drop-in.conf
+    permissions: '0644'
+    owner: root:root
+    content: |
+      [Service]
+      Environment="ETCD_NAME=default"
+      Environment="ETCD_DATA_DIR=/var/lib/etcd/default.etcd"
+      Environment="ETCD_LISTEN_CLIENT_URLS=http://$private_ipv4:2379"
+      Environment="ETCD_ADVERTISE_CLIENT_URLS=http://127.0.0.1:2379"
+    
+   #- path: /etc/kubernetes/apiserver
+  #- path: /etc/kubernetes/config
+        
+users:
+  - name: india
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: wheel
+    ssh-authorized-keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDzugBoyAh99fdD1sX30TxvZzsfrKGG0VntnyeRZTQFC+TvnUSX2Kpq2imUPaDl+FGIaczN6ewAhx27RaRjcA4DnJ6f4L1DhZaMqkAuSSmdeFmYaOPGn/czLsHmGxbgKGdlFQhYNkHmw2gH3svcJ+L54E9ot/xiTpGs4kqXl7+qNPW35eZwodrGkaWoK44iMVAY8stYxO99/2ypgrwNp7sI+1cK4fISFEEqaqb1tgBkNCjJzXgJF8K5kAH/QxyMRQBk8atMcipNju7FKEfz7hkyU/6k0oJXLhAgnxqjdHlCqNCgfvBkrehc7H7iCY8g5NuWSpevAvAFRkXTPSKIFxH9 india@localhost.localdomain
+    shell: /bin/bash
+package_upgrade: true
+packages:
+  - epel-release
+  - git
+  - docker
+  - openssl-devel
+  - etcd
+  - kubernetes
+  - flannel
+  - vim
+  - ntp
+  - ruby
+  - krb5-workstation
+power_state:
+  mode: reboot
+  
+  #/run/systemd/system/fleet.service.d

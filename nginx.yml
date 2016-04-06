@@ -1,0 +1,15 @@
+[Unit]
+Description=Nginx docker container
+After=docker.service
+Requires=docker.service
+
+
+[Service]
+ExecStartPre=-/usr/bin/docker kill nginx
+ExecStartPre=-/usr/bin/docker pull nginx
+
+ExecStart=/usr/bin/docker run --name nginx -p 8080:80 
+ExecStop=/usr/bin/docker stop nginx
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,74 @@
+#cloud-config
+runcmd:
+  - sleep 10
+  - systemctl daemon-reload
+  - systemctl enable docker
+  - systemctl enable kube-apiserver
+  - systemctl enable kube-controller-manager
+  - systemctl enable kube-scheduler
+  - systemctl enable flanneld
+  
+write_files:
+  - path: /etc/hosts
+    owner: root:root
+    permissions: '0644'
+    content: |
+        10.0.0.200 openstack.ayinla.com
+        10.0.0.109 fedora.ayinla.com
+        127.0.0.1  localhost
+        10.0.0.240 kube-master
+        
+  - path: /etc/resolv.conf
+    owner: root:root
+    permissions: '0644'
+    content: |
+        search ayinla.com
+        domain ayinla.com
+        nameserver 8.8.4.4
+        nameserver 8.8.8.8
+        
+  - path: /etc/systemd/system/flanneld.service.d/drop-in.conf
+    permissions: '0644'
+    content: |
+      [Service]
+      Environment="FLANNEL_ETCD=http://kube-master:4001"
+      Environment="FLANNEL_ETCD_KEY=/flannel/network"
+      #FLANNEL_OPTIONS="
+      
+  - path: /etc/systemd/system/kubelet.service.d/drop-in.conf
+    permissions: '0644'
+    content: |
+      [Service]
+      KUBELET_ADDRESS="--address=0.0.0.0"
+      KUBELET_PORT="--port=10250"
+      KUBELET_HOSTNAME=""
+      KUBELET_API_SERVER="--api_servers=http://kube-master:8080"
+      KUBELET_ARGS=""
+      
+  - path: /etc/systemd/system/kube-proxy.service.d/drop-in.conf
+    permissions: '0644'
+    content: |
+      [Service]
+      
+users:
+  - name: india
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: wheel
+    ssh-authorized-keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDzugBoyAh99fdD1sX30TxvZzsfrKGG0VntnyeRZTQFC+TvnUSX2Kpq2imUPaDl+FGIaczN6ewAhx27RaRjcA4DnJ6f4L1DhZaMqkAuSSmdeFmYaOPGn/czLsHmGxbgKGdlFQhYNkHmw2gH3svcJ+L54E9ot/xiTpGs4kqXl7+qNPW35eZwodrGkaWoK44iMVAY8stYxO99/2ypgrwNp7sI+1cK4fISFEEqaqb1tgBkNCjJzXgJF8K5kAH/QxyMRQBk8atMcipNju7FKEfz7hkyU/6k0oJXLhAgnxqjdHlCqNCgfvBkrehc7H7iCY8g5NuWSpevAvAFRkXTPSKIFxH9 india@localhost.localdomain
+    shell: /bin/bash
+package_upgrade: true
+packages:
+  - epel-release
+  - git
+  - openssl-devel
+  - docker
+  - kubernetes
+  - flannel
+  - vim
+  - ntp
+  - ruby
+  - krb5-workstation
+  
+power_state:
+  mode: reboot
