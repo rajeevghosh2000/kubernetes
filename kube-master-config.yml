@@ -51,18 +51,17 @@ write_files:
     permissions: '0644'
     content: |
       [Service]
-      Environment=KUBELET_ADDRESSES="--machines=kube-minion1, kube-minion2"
+      Environment=KUBELET_ADDRESSES="--machines=kube-node-1, kube-node-2"
       Environment=KUBE_CONTROLLER_MANAGER_ARGS=""
       
-  - path: /etc/systemd/system/etcd.service.d/drop-in.conf
+  - path: /etc/etcd/drop-in.conf
     permissions: '0644'
     owner: root:root
     content: |
-      [Service]
-      Environment=ETCD_NAME=default
-      Environment=ETCD_DATA_DIR=/var/lib/etcd/default.etcd
-      Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
-      Environment=ETCD_ADVERTISE_CLIENT_URLS=http://127.0.0.1:2379
+      ETCD_NAME=default
+      ETCD_DATA_DIR=/var/lib/etcd/default.etcd
+      ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      ETCD_ADVERTISE_CLIENT_URLS=http://127.0.0.1:2379
     
    #- path: /etc/kubernetes/apiserver
   #- path: /etc/kubernetes/config
