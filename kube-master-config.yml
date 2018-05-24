@@ -14,7 +14,7 @@ write_files:
     owner: root:root
     permissions: '0644'
     content: |
-        10.0.0.200 openstack.ayinla.com
+        10.0.0.210 openstack.ayinla.com
         10.0.0.109 fedora.ayinla.com
         127.0.0.1 localhost kube-master
         
